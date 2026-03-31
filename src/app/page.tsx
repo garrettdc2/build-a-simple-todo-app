@@ -1,9 +1,7 @@
-import TodoApp from "@/components/TodoApp";
-
 export default function Home() {
   return (
-    <main className="min-h-screen bg-megaman-navy flex items-start justify-center pt-12 px-4 pb-12">
-      <TodoApp />
+    <main>
+      <h1>Hello</h1>
     </main>
   );
 }
