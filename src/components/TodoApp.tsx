@@ -1,112 +1,146 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Todo } from "@/types/todo";
-import TodoInput from "@/components/TodoInput";
-import TodoList from "@/components/TodoList";
+import { useState, useEffect, useCallback } from "react";
+import { Todo } from "@/lib/types";
+import AddTodoForm from "@/components/AddTodoForm";
+import TodoItem from "@/components/TodoItem";
+import HealthBar from "@/components/HealthBar";
 
-const STORAGE_KEY = "sft8-todos";
+const STORAGE_KEY = "sft22-todos";
 
 export default function TodoApp() {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [hydrated, setHydrated] = useState(false);
 
-  // Read from localStorage after hydration
+  // Hydrate from localStorage on mount
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        setTodos(JSON.parse(raw) as Todo[]);
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        setTodos(JSON.parse(stored) as Todo[]);
       }
     } catch {
       // If storage is corrupted, start fresh
-      setTodos([]);
     }
     setHydrated(true);
   }, []);
 
-  // Persist to localStorage on every change (after hydration)
+  // Persist to localStorage on every change (after initial hydration)
   useEffect(() => {
     if (!hydrated) return;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
+    } catch {
+      // Storage quota exceeded — silently ignore
+    }
   }, [todos, hydrated]);
 
-  function addTodo(text: string) {
+  const addTodo = useCallback((text: string) => {
     const trimmed = text.trim();
     if (!trimmed) return;
     setTodos((prev) => [
       ...prev,
       { id: crypto.randomUUID(), text: trimmed, completed: false },
     ]);
-  }
+  }, []);
 
-  function toggleTodo(id: string) {
+  const toggleTodo = useCallback((id: string) => {
     setTodos((prev) =>
       prev.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t))
     );
-  }
+  }, []);
 
-  function deleteTodo(id: string) {
+  const deleteTodo = useCallback((id: string) => {
     setTodos((prev) => prev.filter((t) => t.id !== id));
-  }
+  }, []);
+
+  const completedCount = todos.filter((t) => t.completed).length;
 
   return (
-    <div className="w-full max-w-2xl">
-      {/* Header */}
-      <div className="text-center mb-10">
-        <h1 className="text-megaman-yellow text-xl leading-loose tracking-widest pixel-border-yellow inline-block px-6 py-3 bg-megaman-dark">
-          MEGA TODO
+    <div className="w-full max-w-lg">
+      {/* Title */}
+      <div className="text-center mb-8">
+        <h1
+          className="text-mmx-cyan text-sm leading-loose tracking-widest pixel-border inline-block px-6 py-3 bg-mmx-panel uppercase"
+          data-testid="app-title"
+        >
+          ⚡ Mega TODO X ⚡
         </h1>
-        <p className="text-megaman-blue text-xs mt-6 tracking-wider">
-          [ SFT-8 // PRESS START ]
+        <p className="text-mmx-orange text-[10px] mt-4 tracking-wider">
+          [ SFT-22 // HUNTER MISSION LOG ]
         </p>
       </div>
 
-      {/* Decorative top bar */}
-      <div className="flex gap-1 mb-6">
+      {/* Decorative color bar — stage-select motif */}
+      <div className="flex gap-1 mb-6" data-testid="stage-select-bar">
         {Array.from({ length: 16 }).map((_, i) => (
           <div
             key={i}
             className={`h-2 flex-1 ${
               i % 4 === 0
-                ? "bg-megaman-orange"
+                ? "bg-mmx-orange"
                 : i % 4 === 1
-                ? "bg-megaman-blue"
+                ? "bg-mmx-cyan"
                 : i % 4 === 2
-                ? "bg-megaman-purple"
-                : "bg-megaman-yellow"
+                ? "bg-mmx-green"
+                : "bg-mmx-red"
             }`}
           />
         ))}
       </div>
 
+      {/* Health Bar — Mega Man X boss health meter (AC #8) */}
+      <HealthBar completed={completedCount} total={todos.length} />
+
       {/* Input panel */}
-      <div className="pixel-border bg-megaman-dark p-6 mb-8">
-        <p className="text-megaman-orange text-xs mb-4 tracking-widest">
+      <div className="pixel-border bg-mmx-panel p-6 mb-8">
+        <p className="text-mmx-orange text-xs mb-4 tracking-widest font-pixel">
           &gt; ENTER MISSION:
         </p>
-        <TodoInput onAdd={addTodo} />
+        <AddTodoForm onAdd={addTodo} />
       </div>
 
       {/* Todo list panel */}
-      <div className="pixel-border bg-megaman-dark p-6">
-        <p className="text-megaman-blue text-xs mb-4 tracking-widest">
+      <div className="pixel-border bg-mmx-panel p-6">
+        <p className="text-mmx-cyan text-xs mb-4 tracking-widest font-pixel">
           &gt; ACTIVE MISSIONS ({todos.filter((t) => !t.completed).length}/
           {todos.length}):
         </p>
         {hydrated ? (
-          <TodoList todos={todos} onToggle={toggleTodo} onDelete={deleteTodo} />
+          <ul className="space-y-3" data-testid="todo-list">
+            {todos.length === 0 ? (
+              <li className="py-10 text-center">
+                <p className="text-mmx-gray text-xs tracking-widest leading-loose">
+                  NO MISSIONS FOUND.
+                  <br />
+                  <span className="text-mmx-cyan/60">
+                    ADD A MISSION TO BEGIN.
+                  </span>
+                </p>
+              </li>
+            ) : (
+              todos.map((todo) => (
+                <li key={todo.id}>
+                  <TodoItem
+                    todo={todo}
+                    onToggle={toggleTodo}
+                    onDelete={deleteTodo}
+                  />
+                </li>
+              ))
+            )}
+          </ul>
         ) : (
-          <p className="text-megaman-purple text-xs text-center py-6 tracking-widest">
+          <p className="text-mmx-cyan text-xs text-center py-6 tracking-widest">
             LOADING...
           </p>
         )}
       </div>
 
       {/* Footer */}
-      <div className="text-center mt-6">
-        <p className="text-megaman-purple text-xs tracking-widest opacity-60">
-          &copy; {new Date().getFullYear()} MEGA CORP // ALL RIGHTS RESERVED
+      <div className="text-center mt-6" data-testid="mmx-footer">
+        <p className="text-mmx-gray text-[8px] tracking-widest opacity-60 font-pixel">
+          © 21XX MAVERICK HUNTER HQ
         </p>
       </div>
     </div>

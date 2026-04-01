@@ -1,5 +1,5 @@
 {
-  "name": "app",
+  "name": "sft-22-mega-todo-x",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "test": "jest",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "next": "14.2.35",
@@ -16,6 +17,7 @@
     "react-dom": "^18"
   },
   "devDependencies": {
+    "@playwright/test": "^1.59.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
@@ -27,6 +29,7 @@
     "eslint-config-next": "14.2.35",
     "jest": "^30.3.0",
     "jest-environment-jsdom": "^30.3.0",
+    "autoprefixer": "^10.4.19",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
     "ts-jest": "^29.4.6",

@@ -6,6 +6,7 @@ const createJestConfig = nextJest({
 });
 
 const config: Config = {
+  testPathIgnorePatterns: ["<rootDir>/e2e/", "<rootDir>/node_modules/"],
   coverageProvider: "v8",
   testEnvironment: "jsdom",
   setupFilesAfterEnv: ["<rootDir>/jest.setup.ts"],
@@ -14,7 +15,9 @@ const config: Config = {
   },
   collectCoverageFrom: [
     "src/components/**/*.{ts,tsx}",
-    "src/types/**/*.{ts,tsx}",
+    "src/lib/**/*.{ts,tsx}",
+    "!src/lib/types.ts",
+    "!src/**/__tests__/**",
     "!src/**/*.d.ts",
   ],
   coverageThreshold: {

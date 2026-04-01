@@ -2,7 +2,7 @@ import React from "react";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import TodoItem from "@/components/TodoItem";
-import { Todo } from "@/types/todo";
+import { Todo } from "@/lib/types";
 
 const baseTodo: Todo = {
   id: "test-id-1",
@@ -47,12 +47,12 @@ describe("TodoItem", () => {
       ).toBeInTheDocument();
     });
 
-    it("renders a delete button", () => {
+    it("renders a delete button with aria-label containing the todo text", () => {
       render(
         <TodoItem todo={baseTodo} onToggle={jest.fn()} onDelete={jest.fn()} />
       );
       expect(
-        screen.getByRole("button", { name: /delete todo/i })
+        screen.getByRole("button", { name: /delete defeat sigma/i })
       ).toBeInTheDocument();
     });
 
@@ -94,6 +94,33 @@ describe("TodoItem", () => {
       const span = container.querySelector("span.line-through");
       expect(span).not.toBeInTheDocument();
     });
+
+    it("shows checkmark for completed todo toggle button", () => {
+      render(
+        <TodoItem
+          todo={completedTodo}
+          onToggle={jest.fn()}
+          onDelete={jest.fn()}
+        />
+      );
+      const toggle = screen.getByTestId("todo-toggle");
+      expect(toggle.textContent).toBe("✔");
+    });
+
+    it("shows empty space for incomplete todo toggle button", () => {
+      render(
+        <TodoItem todo={baseTodo} onToggle={jest.fn()} onDelete={jest.fn()} />
+      );
+      const toggle = screen.getByTestId("todo-toggle");
+      expect(toggle.textContent?.trim()).toBe("");
+    });
+
+    it("has data-testid='todo-item' on the root element", () => {
+      render(
+        <TodoItem todo={baseTodo} onToggle={jest.fn()} onDelete={jest.fn()} />
+      );
+      expect(screen.getByTestId("todo-item")).toBeInTheDocument();
+    });
   });
 
   describe("interactions", () => {
@@ -115,7 +142,7 @@ describe("TodoItem", () => {
         <TodoItem todo={baseTodo} onToggle={jest.fn()} onDelete={onDelete} />
       );
       await userEvent.click(
-        screen.getByRole("button", { name: /delete todo/i })
+        screen.getByRole("button", { name: /delete defeat sigma/i })
       );
       expect(onDelete).toHaveBeenCalledTimes(1);
       expect(onDelete).toHaveBeenCalledWith("test-id-1");
@@ -163,10 +190,43 @@ describe("TodoItem", () => {
           onDelete={jest.fn()}
         />
       );
-      // Text should be rendered as text content, not executed as HTML
       expect(
         screen.getByText("<script>alert('xss')</script>")
       ).toBeInTheDocument();
+    });
+
+    it("renders correctly with emoji characters in text", () => {
+      const emojiTodo: Todo = {
+        id: "emoji-id",
+        text: "🎮 Game mission 🕹️",
+        completed: false,
+      };
+      render(
+        <TodoItem
+          todo={emojiTodo}
+          onToggle={jest.fn()}
+          onDelete={jest.fn()}
+        />
+      );
+      expect(screen.getByText("🎮 Game mission 🕹️")).toBeInTheDocument();
+    });
+
+    it("applies different border styles for completed vs incomplete", () => {
+      const { rerender } = render(
+        <TodoItem todo={baseTodo} onToggle={jest.fn()} onDelete={jest.fn()} />
+      );
+      const incompleteItem = screen.getByTestId("todo-item");
+      expect(incompleteItem.className).toContain("border-mmx-cyan");
+
+      rerender(
+        <TodoItem
+          todo={completedTodo}
+          onToggle={jest.fn()}
+          onDelete={jest.fn()}
+        />
+      );
+      const completedItem = screen.getByTestId("todo-item");
+      expect(completedItem.className).toContain("border-mmx-gray/40");
     });
   });
 });
