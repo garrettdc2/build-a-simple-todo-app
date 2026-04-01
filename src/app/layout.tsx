@@ -21,7 +21,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={pressStart2P.variable}>
-      <body className="font-pressStart bg-megaman-dark min-h-screen antialiased">
+      <body className="font-pixel bg-mmx-bg min-h-screen antialiased">
         {children}
       </body>
     </html>
