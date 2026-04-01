@@ -148,6 +148,21 @@ describe("TodoApp", () => {
       expect(screen.getByText("Mission 3")).toBeInTheDocument();
     });
 
+    it("ignores empty string passed to addTodo (defensive guard)", async () => {
+      // TodoApp.addTodo has an internal guard: `if (!trimmed) return`.
+      // AddTodoForm prevents empty submissions at the UI level, but the
+      // guard exists for safety. We exercise it by forcing an empty form submit.
+      const { container } = render(<TodoApp />);
+      await waitForHydration();
+
+      // Submit the form with an empty input — the internal addTodo guard should fire
+      const form = container.querySelector("form")!;
+      form.requestSubmit();
+
+      // No todo should be added — empty state remains
+      expect(screen.getByText("NO MISSIONS FOUND.")).toBeInTheDocument();
+    });
+
     it("removes empty-state message once a todo is added", async () => {
       render(<TodoApp />);
       await waitFor(() =>
@@ -343,6 +358,33 @@ describe("TodoApp", () => {
         const stored = JSON.parse(localStorage.getItem(STORAGE_KEY)!);
         expect(stored[0].completed).toBe(true);
       });
+    });
+
+    it("handles localStorage write failure (quota exceeded) gracefully", async () => {
+      // This covers TodoApp lines 33-35: the try/catch around localStorage.setItem.
+      // When storage is full, the app should continue working without crashing.
+      render(<TodoApp />);
+      await waitForHydration();
+
+      // Simulate storage quota exceeded after hydration
+      const origSetItem = Storage.prototype.setItem;
+      jest
+        .spyOn(Storage.prototype, "setItem")
+        .mockImplementation(() => {
+          throw new DOMException("QuotaExceededError", "QuotaExceededError");
+        });
+
+      // Adding a todo should still work in the UI even though storage write fails
+      await userEvent.type(
+        screen.getByPlaceholderText("ENTER MISSION..."),
+        "Quota test{Enter}"
+      );
+
+      // The todo should appear in the UI despite localStorage failure
+      expect(screen.getByText("Quota test")).toBeInTheDocument();
+
+      // Restore original setItem
+      jest.restoreAllMocks();
     });
 
     it("removes deleted todos from localStorage", async () => {

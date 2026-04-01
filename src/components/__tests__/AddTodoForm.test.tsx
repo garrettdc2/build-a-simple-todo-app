@@ -141,6 +141,25 @@ describe("AddTodoForm", () => {
       expect(onAdd).toHaveBeenCalledWith("spaced out");
     });
 
+    it("handleSubmit guards against empty trimmed text (direct form submit)", async () => {
+      // This covers AddTodoForm line 15: the `if (!trimmed) return` guard.
+      // Even though the button is disabled for whitespace, a form submit can
+      // still be triggered programmatically. We simulate by typing whitespace
+      // then submitting the form directly.
+      const onAdd = jest.fn();
+      const { container } = render(<AddTodoForm onAdd={onAdd} />);
+      const input = screen.getByPlaceholderText("ENTER MISSION...");
+      const form = container.querySelector("form")!;
+
+      // Set the input to whitespace (button is disabled, but form submit still works)
+      await userEvent.type(input, "   ");
+      form.requestSubmit();
+
+      expect(onAdd).not.toHaveBeenCalled();
+      // Input should retain its value since no submission happened
+      expect(input).toHaveValue("   ");
+    });
+
     it("does not retain the previous value after two separate submissions", async () => {
       const onAdd = jest.fn();
       render(<AddTodoForm onAdd={onAdd} />);
