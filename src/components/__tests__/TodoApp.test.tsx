@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen, waitFor, act } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import TodoApp from "@/components/TodoApp";
 
@@ -11,8 +11,7 @@ Object.defineProperty(globalThis, "crypto", {
   writable: true,
 });
 
-// localStorage mock is provided by jest-environment-jsdom
-const STORAGE_KEY = "sft8-todos";
+const STORAGE_KEY = "sft22-todos";
 
 beforeEach(() => {
   uuidCounter = 0;
@@ -20,12 +19,21 @@ beforeEach(() => {
   localStorage.clear();
 });
 
+// Helper: wait for hydration to complete
+async function waitForHydration() {
+  await waitFor(() =>
+    expect(screen.queryByText("LOADING...")).not.toBeInTheDocument()
+  );
+}
+
 describe("TodoApp", () => {
   describe("initial render", () => {
-    it("renders the MEGA TODO heading", async () => {
+    it("renders the Mega TODO X title", async () => {
       render(<TodoApp />);
       await waitFor(() => {
-        expect(screen.getByText("MEGA TODO")).toBeInTheDocument();
+        expect(screen.getByTestId("app-title")).toHaveTextContent(
+          "Mega TODO X"
+        );
       });
     });
 
@@ -45,22 +53,38 @@ describe("TodoApp", () => {
 
     it("shows LOADING state before hydration completes then resolves to list", async () => {
       render(<TodoApp />);
-      // After hydration, either loading or list should be shown
       await waitFor(() => {
-        // After async hydration, loading disappears
         expect(screen.queryByText("LOADING...")).not.toBeInTheDocument();
       });
+    });
+
+    it("renders the health bar component", async () => {
+      render(<TodoApp />);
+      await waitForHydration();
+      expect(screen.getByTestId("health-bar")).toBeInTheDocument();
+    });
+
+    it("renders the stage-select color bar (decorative)", async () => {
+      const { container } = render(<TodoApp />);
+      await waitForHydration();
+      // 16 decorative color bar segments
+      const bars = container.querySelectorAll(".bg-mmx-orange, .bg-mmx-cyan, .bg-mmx-green, .bg-mmx-red");
+      expect(bars.length).toBeGreaterThanOrEqual(4);
+    });
+
+    it("renders the footer text", async () => {
+      render(<TodoApp />);
+      await waitForHydration();
+      expect(screen.getByText(/MAVERICK HUNTER HQ/i)).toBeInTheDocument();
     });
   });
 
   describe("adding todos", () => {
     it("adds a new todo when text is typed and submitted via button", async () => {
       render(<TodoApp />);
-      await waitFor(() =>
-        expect(screen.queryByText("LOADING...")).not.toBeInTheDocument()
-      );
+      await waitForHydration();
 
-      const input = screen.getByPlaceholderText("MISSION NAME...");
+      const input = screen.getByPlaceholderText("ENTER MISSION...");
       await userEvent.type(input, "Defeat Bospider");
       await userEvent.click(screen.getByRole("button", { name: /\+ ADD/i }));
 
@@ -69,12 +93,10 @@ describe("TodoApp", () => {
 
     it("adds a new todo when Enter is pressed", async () => {
       render(<TodoApp />);
-      await waitFor(() =>
-        expect(screen.queryByText("LOADING...")).not.toBeInTheDocument()
-      );
+      await waitForHydration();
 
       await userEvent.type(
-        screen.getByPlaceholderText("MISSION NAME..."),
+        screen.getByPlaceholderText("ENTER MISSION..."),
         "Defeat Rangda Bangda{Enter}"
       );
 
@@ -83,24 +105,19 @@ describe("TodoApp", () => {
 
     it("clears input field after adding a todo", async () => {
       render(<TodoApp />);
-      await waitFor(() =>
-        expect(screen.queryByText("LOADING...")).not.toBeInTheDocument()
-      );
+      await waitForHydration();
 
-      const input = screen.getByPlaceholderText("MISSION NAME...");
+      const input = screen.getByPlaceholderText("ENTER MISSION...");
       await userEvent.type(input, "New mission{Enter}");
       expect(input).toHaveValue("");
     });
 
     it("does not add a todo for whitespace-only input", async () => {
       render(<TodoApp />);
-      await waitFor(() =>
-        expect(screen.queryByText("LOADING...")).not.toBeInTheDocument()
-      );
+      await waitForHydration();
 
-      // Button should be disabled for whitespace
       await userEvent.type(
-        screen.getByPlaceholderText("MISSION NAME..."),
+        screen.getByPlaceholderText("ENTER MISSION..."),
         "   "
       );
       expect(screen.getByRole("button", { name: /\+ ADD/i })).toBeDisabled();
@@ -108,12 +125,9 @@ describe("TodoApp", () => {
 
     it("trims whitespace from todo text before adding", async () => {
       render(<TodoApp />);
-      await waitFor(() =>
-        expect(screen.queryByText("LOADING...")).not.toBeInTheDocument()
-      );
+      await waitForHydration();
 
-      // Type text with leading/trailing spaces via direct input manipulation
-      const input = screen.getByPlaceholderText("MISSION NAME...");
+      const input = screen.getByPlaceholderText("ENTER MISSION...");
       await userEvent.type(input, "  Trimmed mission  ");
       await userEvent.click(screen.getByRole("button", { name: /\+ ADD/i }));
 
@@ -122,11 +136,9 @@ describe("TodoApp", () => {
 
     it("adds multiple todos and shows them all", async () => {
       render(<TodoApp />);
-      await waitFor(() =>
-        expect(screen.queryByText("LOADING...")).not.toBeInTheDocument()
-      );
+      await waitForHydration();
 
-      const input = screen.getByPlaceholderText("MISSION NAME...");
+      const input = screen.getByPlaceholderText("ENTER MISSION...");
       await userEvent.type(input, "Mission 1{Enter}");
       await userEvent.type(input, "Mission 2{Enter}");
       await userEvent.type(input, "Mission 3{Enter}");
@@ -142,7 +154,7 @@ describe("TodoApp", () => {
         expect(screen.getByText("NO MISSIONS FOUND.")).toBeInTheDocument()
       );
 
-      const input = screen.getByPlaceholderText("MISSION NAME...");
+      const input = screen.getByPlaceholderText("ENTER MISSION...");
       await userEvent.type(input, "First mission{Enter}");
 
       expect(screen.queryByText("NO MISSIONS FOUND.")).not.toBeInTheDocument();
@@ -152,12 +164,10 @@ describe("TodoApp", () => {
   describe("toggling todos", () => {
     it("marks a todo complete when toggle button is clicked", async () => {
       render(<TodoApp />);
-      await waitFor(() =>
-        expect(screen.queryByText("LOADING...")).not.toBeInTheDocument()
-      );
+      await waitForHydration();
 
       await userEvent.type(
-        screen.getByPlaceholderText("MISSION NAME..."),
+        screen.getByPlaceholderText("ENTER MISSION..."),
         "Toggle me{Enter}"
       );
 
@@ -172,20 +182,16 @@ describe("TodoApp", () => {
 
     it("marks a completed todo incomplete when toggle is clicked again", async () => {
       render(<TodoApp />);
-      await waitFor(() =>
-        expect(screen.queryByText("LOADING...")).not.toBeInTheDocument()
-      );
+      await waitForHydration();
 
       await userEvent.type(
-        screen.getByPlaceholderText("MISSION NAME..."),
+        screen.getByPlaceholderText("ENTER MISSION..."),
         "Toggle me twice{Enter}"
       );
 
-      // Toggle to complete
       await userEvent.click(
         screen.getByRole("button", { name: /mark complete/i })
       );
-      // Toggle back to incomplete
       await userEvent.click(
         screen.getByRole("button", { name: /mark incomplete/i })
       );
@@ -197,12 +203,10 @@ describe("TodoApp", () => {
 
     it("shows DONE badge after toggling complete", async () => {
       render(<TodoApp />);
-      await waitFor(() =>
-        expect(screen.queryByText("LOADING...")).not.toBeInTheDocument()
-      );
+      await waitForHydration();
 
       await userEvent.type(
-        screen.getByPlaceholderText("MISSION NAME..."),
+        screen.getByPlaceholderText("ENTER MISSION..."),
         "Show done{Enter}"
       );
 
@@ -217,18 +221,16 @@ describe("TodoApp", () => {
   describe("deleting todos", () => {
     it("removes a todo when delete button is clicked", async () => {
       render(<TodoApp />);
-      await waitFor(() =>
-        expect(screen.queryByText("LOADING...")).not.toBeInTheDocument()
-      );
+      await waitForHydration();
 
       await userEvent.type(
-        screen.getByPlaceholderText("MISSION NAME..."),
+        screen.getByPlaceholderText("ENTER MISSION..."),
         "Delete me{Enter}"
       );
       expect(screen.getByText("Delete me")).toBeInTheDocument();
 
       await userEvent.click(
-        screen.getByRole("button", { name: /delete todo/i })
+        screen.getByRole("button", { name: /delete delete me/i })
       );
 
       expect(screen.queryByText("Delete me")).not.toBeInTheDocument();
@@ -236,17 +238,15 @@ describe("TodoApp", () => {
 
     it("shows empty state after last todo is deleted", async () => {
       render(<TodoApp />);
-      await waitFor(() =>
-        expect(screen.queryByText("LOADING...")).not.toBeInTheDocument()
-      );
+      await waitForHydration();
 
       await userEvent.type(
-        screen.getByPlaceholderText("MISSION NAME..."),
+        screen.getByPlaceholderText("ENTER MISSION..."),
         "Only todo{Enter}"
       );
 
       await userEvent.click(
-        screen.getByRole("button", { name: /delete todo/i })
+        screen.getByRole("button", { name: /delete only todo/i })
       );
 
       expect(screen.getByText("NO MISSIONS FOUND.")).toBeInTheDocument();
@@ -254,19 +254,15 @@ describe("TodoApp", () => {
 
     it("only deletes the targeted todo when multiple are present", async () => {
       render(<TodoApp />);
-      await waitFor(() =>
-        expect(screen.queryByText("LOADING...")).not.toBeInTheDocument()
-      );
+      await waitForHydration();
 
-      const input = screen.getByPlaceholderText("MISSION NAME...");
+      const input = screen.getByPlaceholderText("ENTER MISSION...");
       await userEvent.type(input, "Keep me{Enter}");
       await userEvent.type(input, "Delete me{Enter}");
 
-      const deleteButtons = screen.getAllByRole("button", {
-        name: /delete todo/i,
-      });
-      // Delete the second todo (index 1)
-      await userEvent.click(deleteButtons[1]);
+      await userEvent.click(
+        screen.getByRole("button", { name: /delete delete me/i })
+      );
 
       expect(screen.getByText("Keep me")).toBeInTheDocument();
       expect(screen.queryByText("Delete me")).not.toBeInTheDocument();
@@ -276,12 +272,10 @@ describe("TodoApp", () => {
   describe("localStorage persistence", () => {
     it("persists todos to localStorage when added", async () => {
       render(<TodoApp />);
-      await waitFor(() =>
-        expect(screen.queryByText("LOADING...")).not.toBeInTheDocument()
-      );
+      await waitForHydration();
 
       await userEvent.type(
-        screen.getByPlaceholderText("MISSION NAME..."),
+        screen.getByPlaceholderText("ENTER MISSION..."),
         "Persist me{Enter}"
       );
 
@@ -329,19 +323,16 @@ describe("TodoApp", () => {
       render(<TodoApp />);
 
       await waitFor(() => {
-        // Should not crash — shows empty state
         expect(screen.getByText("NO MISSIONS FOUND.")).toBeInTheDocument();
       });
     });
 
     it("persists toggle state to localStorage", async () => {
       render(<TodoApp />);
-      await waitFor(() =>
-        expect(screen.queryByText("LOADING...")).not.toBeInTheDocument()
-      );
+      await waitForHydration();
 
       await userEvent.type(
-        screen.getByPlaceholderText("MISSION NAME..."),
+        screen.getByPlaceholderText("ENTER MISSION..."),
         "Toggle and persist{Enter}"
       );
       await userEvent.click(
@@ -356,16 +347,14 @@ describe("TodoApp", () => {
 
     it("removes deleted todos from localStorage", async () => {
       render(<TodoApp />);
-      await waitFor(() =>
-        expect(screen.queryByText("LOADING...")).not.toBeInTheDocument()
-      );
+      await waitForHydration();
 
       await userEvent.type(
-        screen.getByPlaceholderText("MISSION NAME..."),
+        screen.getByPlaceholderText("ENTER MISSION..."),
         "Delete from storage{Enter}"
       );
       await userEvent.click(
-        screen.getByRole("button", { name: /delete todo/i })
+        screen.getByRole("button", { name: /delete delete from storage/i })
       );
 
       await waitFor(() => {
@@ -378,25 +367,20 @@ describe("TodoApp", () => {
   describe("active missions counter", () => {
     it("shows correct active/total count after adding todos", async () => {
       render(<TodoApp />);
-      await waitFor(() =>
-        expect(screen.queryByText("LOADING...")).not.toBeInTheDocument()
-      );
+      await waitForHydration();
 
-      const input = screen.getByPlaceholderText("MISSION NAME...");
+      const input = screen.getByPlaceholderText("ENTER MISSION...");
       await userEvent.type(input, "Mission A{Enter}");
       await userEvent.type(input, "Mission B{Enter}");
 
-      // Both active: "ACTIVE MISSIONS (2/2):"
       expect(screen.getByText(/ACTIVE MISSIONS \(2\/2\)/i)).toBeInTheDocument();
     });
 
     it("updates counter when a todo is completed", async () => {
       render(<TodoApp />);
-      await waitFor(() =>
-        expect(screen.queryByText("LOADING...")).not.toBeInTheDocument()
-      );
+      await waitForHydration();
 
-      const input = screen.getByPlaceholderText("MISSION NAME...");
+      const input = screen.getByPlaceholderText("ENTER MISSION...");
       await userEvent.type(input, "Mission A{Enter}");
       await userEvent.type(input, "Mission B{Enter}");
 
@@ -404,8 +388,31 @@ describe("TodoApp", () => {
         screen.getAllByRole("button", { name: /mark complete/i })[0]
       );
 
-      // 1 active out of 2
       expect(screen.getByText(/ACTIVE MISSIONS \(1\/2\)/i)).toBeInTheDocument();
+    });
+  });
+
+  describe("health bar integration", () => {
+    it("shows 0/0 when no todos exist", async () => {
+      render(<TodoApp />);
+      await waitForHydration();
+      expect(screen.getByText("0/0")).toBeInTheDocument();
+    });
+
+    it("updates health bar when todo is completed", async () => {
+      render(<TodoApp />);
+      await waitForHydration();
+
+      await userEvent.type(
+        screen.getByPlaceholderText("ENTER MISSION..."),
+        "Health test{Enter}"
+      );
+      expect(screen.getByText("0/1")).toBeInTheDocument();
+
+      await userEvent.click(
+        screen.getByRole("button", { name: /mark complete/i })
+      );
+      expect(screen.getByText("1/1")).toBeInTheDocument();
     });
   });
 });
