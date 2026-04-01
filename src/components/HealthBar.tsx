@@ -6,7 +6,7 @@ interface HealthBarProps {
 }
 
 export default function HealthBar({ completed, total }: HealthBarProps) {
-  const percentage = total === 0 ? 0 : Math.round((completed / total) * 100);
+  const percentage = total === 0 ? 0 : Math.floor((completed / total) * 100);
 
   // Mega Man X health bar color: cyan when high, orange mid, red when low
   const barColor =

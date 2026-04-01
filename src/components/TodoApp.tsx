@@ -28,7 +28,11 @@ export default function TodoApp() {
   // Persist to localStorage on every change (after initial hydration)
   useEffect(() => {
     if (!hydrated) return;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
+    } catch {
+      // Storage quota exceeded — silently ignore
+    }
   }, [todos, hydrated]);
 
   const addTodo = useCallback((text: string) => {
@@ -68,7 +72,7 @@ export default function TodoApp() {
       </div>
 
       {/* Decorative color bar — stage-select motif */}
-      <div className="flex gap-1 mb-6">
+      <div className="flex gap-1 mb-6" data-testid="stage-select-bar">
         {Array.from({ length: 16 }).map((_, i) => (
           <div
             key={i}
@@ -134,7 +138,7 @@ export default function TodoApp() {
       </div>
 
       {/* Footer */}
-      <div className="text-center mt-6">
+      <div className="text-center mt-6" data-testid="mmx-footer">
         <p className="text-mmx-gray text-[8px] tracking-widest opacity-60 font-pixel">
           © 21XX MAVERICK HUNTER HQ
         </p>

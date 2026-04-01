@@ -63,10 +63,10 @@ describe("HealthBar", () => {
       expect(fill.style.width).toBe("33%");
     });
 
-    it("rounds percentage to nearest integer (2/3 = 67%)", () => {
+    it("floors percentage to avoid false 100% (2/3 = 66%)", () => {
       render(<HealthBar completed={2} total={3} />);
       const fill = screen.getByTestId("health-bar-fill");
-      expect(fill.style.width).toBe("67%");
+      expect(fill.style.width).toBe("66%");
     });
   });
 
