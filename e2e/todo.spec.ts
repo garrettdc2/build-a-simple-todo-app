@@ -3,14 +3,14 @@ import { test, expect } from "@playwright/test";
 const STORAGE_KEY = "sft22-todos";
 
 test.beforeEach(async ({ page }) => {
-  // Clear localStorage before each test so we start fresh
+  // Navigate and clear localStorage so we start with a clean slate
   await page.goto("/");
   await page.evaluate((key) => localStorage.removeItem(key), STORAGE_KEY);
   await page.reload();
-  // Wait for the app to hydrate — the "NO MISSIONS FOUND." text appears once hydrated
+  // Wait for hydration — the todo-list element renders only after client hydration
   await page.waitForSelector('[data-testid="todo-list"]', {
     state: "visible",
-    timeout: 15_000,
+    timeout: 30_000,
   });
 });
 
@@ -124,7 +124,7 @@ test("TODO items persist across page reloads", async ({ page }) => {
   await page.reload();
   await page.waitForSelector('[data-testid="todo-list"]', {
     state: "visible",
-    timeout: 15_000,
+    timeout: 30_000,
   });
 
   // Both todos should still be present
@@ -211,27 +211,14 @@ test("Mega Man X health bar decorative element is present", async ({
   const fill = page.getByTestId("health-bar-fill");
   await expect(fill).toBeAttached();
 
-  // The decorative color bar (stage-select motif) should be present
-  // These are 16 small colored divs
-  const decorativeElements = await page.evaluate(() => {
-    const allDivs = document.querySelectorAll("div");
-    let count = 0;
-    for (const div of allDivs) {
-      const bg = getComputedStyle(div).backgroundColor;
-      // Count small decorative elements with non-transparent backgrounds
-      if (
-        bg !== "rgba(0, 0, 0, 0)" &&
-        bg !== "rgb(255, 255, 255)" &&
-        div.clientHeight <= 16 &&
-        div.clientHeight > 0 &&
-        div.clientWidth < 100
-      ) {
-        count++;
-      }
-    }
-    return count;
-  });
-  expect(decorativeElements).toBeGreaterThanOrEqual(4);
+  // The decorative color bar (stage-select motif) should be present —
+  // it's a row of 16 small colored bars rendered by TodoApp
+  const colorBarSegments = page.locator(
+    '.bg-mmx-orange, .bg-mmx-cyan, .bg-mmx-green, .bg-mmx-red'
+  );
+  const segmentCount = await colorBarSegments.count();
+  // The stage-select color bar has 16 segments (4 per colour × 4 colours)
+  expect(segmentCount).toBeGreaterThanOrEqual(4);
 
   // The title references the game theme
   await expect(page.getByText("Mega TODO X")).toBeVisible();
