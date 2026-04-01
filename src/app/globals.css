@@ -2,26 +2,56 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@layer base {
+  html,
+  body {
+    background-color: #0A0A2E;
+    color: #00A8FF;
+    min-height: 100vh;
+  }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  /* CRT scanline overlay */
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 0, 0, 0.08) 2px,
+      rgba(0, 0, 0, 0.08) 4px
+    );
+    pointer-events: none;
+    z-index: 9999;
   }
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
-}
-
 @layer utilities {
-  .text-balance {
-    text-wrap: balance;
+  .pixel-border {
+    box-shadow:
+      0 0 0 2px #00A8FF,
+      4px 4px 0 0 #00A8FF,
+      -4px 4px 0 0 #00A8FF,
+      4px -4px 0 0 #00A8FF,
+      -4px -4px 0 0 #00A8FF;
+  }
+
+  .pixel-border-orange {
+    box-shadow:
+      0 0 0 2px #FF6400,
+      4px 4px 0 0 #FF6400,
+      -4px 4px 0 0 #FF6400,
+      4px -4px 0 0 #FF6400,
+      -4px -4px 0 0 #FF6400;
+  }
+
+  .pixel-border-yellow {
+    box-shadow:
+      0 0 0 2px #FFD700,
+      4px 4px 0 0 #FFD700,
+      -4px 4px 0 0 #FFD700,
+      4px -4px 0 0 #FFD700,
+      -4px -4px 0 0 #FFD700;
   }
 }
