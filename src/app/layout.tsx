@@ -10,8 +10,8 @@ const pressStart2P = Press_Start_2P({
 });
 
 export const metadata: Metadata = {
-  title: "MEGA TODO — SFT-8",
-  description: "A Megaman X themed TODO app",
+  title: "Mega TODO X",
+  description: "A 16-bit SNES-themed TODO app inspired by Mega Man X",
 };
 
 export default function RootLayout({
@@ -21,7 +21,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={pressStart2P.variable}>
-      <body className="font-pressStart bg-megaman-navy min-h-screen">
+      <body className="font-pressStart bg-megaman-dark min-h-screen antialiased">
         {children}
       </body>
     </html>
